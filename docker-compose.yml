@@ -1,0 +1,18 @@
+services:
+  api:
+    build: ./backend
+    volumes:
+      - ./data:/data
+    environment:
+      DATA_DIR: /data
+    expose:
+      - "8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped

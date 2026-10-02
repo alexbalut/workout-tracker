@@ -1,0 +1,25 @@
+# Data (keep folder via .gitkeep)
+data/*.csv
+!data/.gitkeep
+
+# Python
+backend/.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.Python
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+*.log
+npm-debug.log*
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+.env
+.env.*
