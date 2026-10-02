@@ -1,0 +1,128 @@
+@if (error()) {
+  <div class="banner error" role="alert">{{ error() }}</div>
+}
+@if (status()) {
+  <div class="banner ok">{{ status() }}</div>
+}
+
+<section class="card">
+  <h2>Session</h2>
+  <div class="row">
+    <label>
+      Workout name
+      <input
+        type="text"
+        [(ngModel)]="workoutName"
+        placeholder="e.g. Push Day"
+        autocomplete="off"
+      />
+    </label>
+    <label>
+      Date
+      <input type="date" [(ngModel)]="workoutDate" />
+    </label>
+    <button type="button" class="btn primary" (click)="startSession()" [disabled]="saving()">
+      Start / create
+    </button>
+  </div>
+  @if (activeId) {
+    <p class="active">
+      Active: <strong>{{ activeName }}</strong> · {{ activeDate }}
+      <span class="muted">({{ activeId }})</span>
+    </p>
+  }
+</section>
+
+<section class="card">
+  <h2>Add set</h2>
+  <div class="row wrap">
+    <label class="grow suggest-wrap">
+      Exercise
+      <input
+        type="text"
+        [(ngModel)]="exercise"
+        (ngModelChange)="onExerciseInput()"
+        (focus)="showSuggestions.set(true)"
+        (blur)="onExerciseBlur()"
+        placeholder="Bench press"
+        autocomplete="off"
+      />
+      @if (showSuggestions() && filteredExercises().length) {
+        <ul class="suggestions">
+          @for (e of filteredExercises(); track e.name) {
+            <li (mousedown)="pickExercise(e)">
+              <span>{{ e.name }}</span>
+              <span class="muted">{{ e.last_reps }} × {{ e.last_weight_lbs }} lb</span>
+            </li>
+          }
+        </ul>
+      }
+    </label>
+    <label class="narrow">
+      Set #
+      <input type="number" min="1" [(ngModel)]="setNumber" />
+    </label>
+    <label class="narrow">
+      Reps
+      <input type="number" min="0" [(ngModel)]="reps" />
+    </label>
+    <label class="narrow">
+      Weight (lbs)
+      <input type="number" min="0" step="0.5" [(ngModel)]="weightLbs" />
+    </label>
+    <button type="button" class="btn primary" (click)="saveSet()" [disabled]="saving() || !activeId">
+      Save set
+    </button>
+  </div>
+  <p class="hint">Weight 0 = bodyweight. Saving appends a CSV row immediately.</p>
+</section>
+
+<section class="card">
+  <h2>Sets this session</h2>
+  @if (!sets().length) {
+    <p class="muted">No sets yet.</p>
+  } @else {
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Exercise</th>
+            <th>Set</th>
+            <th>Reps</th>
+            <th>Weight</th>
+            <th>Saved</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sets(); track s.saved_at + s.exercise + s.set_number) {
+            <tr>
+              <td>{{ s.exercise }}</td>
+              <td>{{ s.set_number }}</td>
+              <td>{{ s.reps }}</td>
+              <td>{{ s.weight_lbs }}</td>
+              <td class="muted">{{ s.saved_at }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<section class="card">
+  <h2>History (last 20)</h2>
+  @if (!history().length) {
+    <p class="muted">No workouts yet.</p>
+  } @else {
+    <ul class="history">
+      @for (w of history(); track w.id) {
+        <li>
+          <button type="button" class="linkish" (click)="openWorkout(w)">
+            <strong>{{ w.workout_name }}</strong>
+            <span>{{ w.date }}</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</section>

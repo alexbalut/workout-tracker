@@ -1,0 +1,93 @@
+@if (error()) {
+  <div class="banner error" role="alert">{{ error() }}</div>
+}
+@if (status()) {
+  <div class="banner ok">{{ status() }}</div>
+}
+
+<section class="card">
+  <h2>Exercise progress</h2>
+  <p class="hint formula">
+    Estimated 1RM uses Epley:
+    <code>weight_lbs × (1 + reps / 30)</code>
+    — best (max) e1RM per workout date.
+  </p>
+  <div class="row">
+    <label class="grow suggest-wrap">
+      Exercise
+      <input
+        type="text"
+        [(ngModel)]="exercise"
+        (ngModelChange)="onExerciseInput()"
+        (focus)="showSuggestions.set(true)"
+        (blur)="onExerciseBlur()"
+        (keydown.enter)="loadSelected()"
+        placeholder="Start typing…"
+        autocomplete="off"
+      />
+      @if (showSuggestions() && filteredExercises().length) {
+        <ul class="suggestions">
+          @for (e of filteredExercises(); track e.name) {
+            <li (mousedown)="pickExercise(e)">
+              <span>{{ e.name }}</span>
+              <span class="muted">{{ e.last_reps }} × {{ e.last_weight_lbs }} lb</span>
+            </li>
+          }
+        </ul>
+      }
+    </label>
+    <button type="button" class="btn primary" (click)="loadSelected()" [disabled]="loading()">
+      Show
+    </button>
+    <button
+      type="button"
+      class="btn toggle"
+      (click)="toggleVolume()"
+      [class.on]="showVolume()"
+      [disabled]="!points().length"
+    >
+      {{ showVolume() ? 'Hide volume' : 'Show volume' }}
+    </button>
+  </div>
+</section>
+
+<section class="card chart-card">
+  @if (!selectedName()) {
+    <p class="muted">Pick an exercise to see estimated 1RM over time.</p>
+  } @else if (loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (!points().length) {
+    <p class="muted">No data points yet.</p>
+  } @else {
+    <div class="chart-wrap">
+      <canvas
+        baseChart
+        [data]="chartData"
+        [options]="chartOptions"
+        [type]="'line'"
+      ></canvas>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>e1RM</th>
+            <th>Volume</th>
+            <th>Best set</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of points(); track p.date) {
+            <tr>
+              <td>{{ p.date }}</td>
+              <td>{{ p.e1rm }}</td>
+              <td>{{ p.volume }}</td>
+              <td>{{ p.best_set.weight_lbs }} × {{ p.best_set.reps }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>

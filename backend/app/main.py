@@ -104,3 +104,14 @@ def add_set(workout_id: str, body: AddSet):
         raise HTTPException(status_code=404, detail="Workout not found")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@app.get("/api/exercises/{name}/progress")
+def get_exercise_progress(name: str):
+    """Progress points for an exercise (URL-encoded name). Case-insensitive match."""
+    from urllib.parse import unquote
+
+    decoded = unquote(name).strip()
+    if not decoded:
+        raise HTTPException(status_code=400, detail="exercise name required")
+    return csv_store.exercise_progress(decoded, DATA_DIR)

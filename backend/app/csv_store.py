@@ -221,3 +221,85 @@ def list_exercises(data_dir: Path | None = None) -> list[dict[str, Any]]:
         ],
         key=lambda x: x["name"].lower(),
     )
+
+
+def epley_e1rm(weight_lbs: float, reps: int) -> float:
+    """Estimated 1RM via Epley: weight * (1 + reps/30)."""
+    return weight_lbs * (1.0 + reps / 30.0)
+
+
+def exercise_progress(
+    exercise_name: str,
+    data_dir: Path | None = None,
+) -> list[dict[str, Any]]:
+    """Per-date best e1RM and volume for an exercise across all CSVs.
+
+    Matching is case-insensitive. Returns points sorted by date ascending.
+    best_set tie-break: higher e1rm, then higher weight, then higher reps.
+    """
+    target = exercise_name.strip().lower()
+    if not target:
+        return []
+
+    d = ensure_data_dir(data_dir)
+    # date -> list of set dicts for this exercise
+    by_date: dict[str, list[dict[str, Any]]] = {}
+
+    for path in sorted(d.glob("*.csv"), key=lambda p: p.stat().st_mtime):
+        with path.open("r", newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                name = (row.get("exercise") or "").strip()
+                if not name or name.lower() != target:
+                    continue
+                wdate = (row.get("date") or "").strip()
+                if not wdate:
+                    # Fallback: parse date from filename stem
+                    m = re.match(r"^.+_(\d{4}-\d{2}-\d{2})$", path.stem)
+                    wdate = m.group(1) if m else ""
+                if not wdate:
+                    continue
+                try:
+                    reps = int(float(row.get("reps") or 0))
+                    weight = float(row.get("weight_lbs") or 0)
+                except (TypeError, ValueError):
+                    continue
+                by_date.setdefault(wdate, []).append(
+                    {"reps": reps, "weight_lbs": weight}
+                )
+
+    results: list[dict[str, Any]] = []
+    for wdate in sorted(by_date.keys()):
+        sets = by_date[wdate]
+        best: dict[str, Any] | None = None
+        best_e1rm = float("-inf")
+        volume = 0.0
+        for s in sets:
+            reps = s["reps"]
+            weight = s["weight_lbs"]
+            volume += reps * weight
+            e1rm = epley_e1rm(weight, reps)
+            if best is None or e1rm > best_e1rm:
+                best = s
+                best_e1rm = e1rm
+            elif e1rm == best_e1rm:
+                # Prefer higher weight, then higher reps
+                assert best is not None
+                if weight > best["weight_lbs"] or (
+                    weight == best["weight_lbs"] and reps > best["reps"]
+                ):
+                    best = s
+                    best_e1rm = e1rm
+        assert best is not None
+        results.append(
+            {
+                "date": wdate,
+                "e1rm": round(best_e1rm, 1),
+                "volume": round(volume, 1),
+                "best_set": {
+                    "reps": best["reps"],
+                    "weight_lbs": best["weight_lbs"],
+                },
+            }
+        )
+    return results

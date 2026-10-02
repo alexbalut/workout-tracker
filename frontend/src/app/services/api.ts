@@ -27,6 +27,13 @@ export interface WorkoutDetail extends WorkoutSummary {
   sets: SetRow[];
 }
 
+export interface ProgressPoint {
+  date: string;
+  e1rm: number;
+  volume: number;
+  best_set: { reps: number; weight_lbs: number };
+}
+
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private readonly http = inject(HttpClient);
@@ -34,6 +41,12 @@ export class ApiService {
 
   getExercises(): Observable<ExerciseInfo[]> {
     return this.http.get<ExerciseInfo[]>(`${this.base}/exercises`);
+  }
+
+  getExerciseProgress(name: string): Observable<ProgressPoint[]> {
+    return this.http.get<ProgressPoint[]>(
+      `${this.base}/exercises/${encodeURIComponent(name)}/progress`,
+    );
   }
 
   getWorkouts(): Observable<WorkoutSummary[]> {
